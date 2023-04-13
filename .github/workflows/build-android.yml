@@ -1,0 +1,99 @@
+name: android-gradle-prebuilt-release-actions-workflow
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - 'c*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: windows-latest
+    env:
+      appName: TODOList
+      tagName: 'v0.0.1'
+      targetZip: TODOList-${{ github.ref_name }}.zip
+    steps:
+#       - name: git clone
+#         shell: cmd
+#         run: git clone --recursive https://github.com/thundernest/k-9.git && cd k-9 && git checkout "${{ env.tagName }}"
+        
+      - uses: actions/checkout@v3
+      
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.9.0
+        with:
+          access_token: ${{ secrets.GITHUB_TOKEN }}
+
+#      - name: Get Last Commit Date
+#        id: date
+#        run: echo "::set-output name=date::$(git log -1 --format="%at" | xargs -I{} date -d @{} +%Y%m%d_%H%M%S)"
+
+#     - name: Get Changelog
+#       id: changelog
+#       run: |
+#         CHANGELOG_ENV=$(git log --pretty=format:"%an: %s" | ./scripts/filter_changelog.py | jq --raw-input --slurp '.' | sed 's/^\"\"$/CANCEL/g')
+#         echo "$CHANGELOG_ENV"
+#         echo "::set-output name=RELEASE_BODY::$CHANGELOG_ENV"
+#     - name: Debug
+#       run: |
+#         echo "RELEASE_BODY: " ${{ steps.changelog.outputs.RELEASE_BODY }}
+        
+#     - name: Kick off Cancelling(if need)
+#       uses: andymckay/cancel-action@0.2
+#       if: steps.changelog.outputs.RELEASE_BODY == 'CANCEL'
+
+#     - name: Waiting for Cancellation
+#       run: sleep 30
+#       if: steps.changelog.outputs.RELEASE_BODY == 'CANCEL'
+
+#    - uses: actions/cache@v2
+#      with:
+#        path: |
+#          ~/.gradle/caches
+#          ~/.gradle/wrapper
+#        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+#        restore-keys: |
+#          ${{ runner.os }}-gradle-
+          
+      - uses: actions/setup-java@v2
+        with:
+          distribution: 'adopt'
+          java-version: '11'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2.0.10
+
+      # chmod  777 ./gradlew.bat && 
+      - name: Build with Gradle
+        run: ./gradlew.bat --no-daemon assembleDebug
+
+      - name: Archive Release
+        uses: thedoctor0/zip-release@master
+        with:
+          type: 'zip'
+          path: 'k9mail-debug.apk'
+          directory: "app/build/outputs/apk/debug"
+          filename: "${{ env.targetZip }}"
+
+      - name: Release prebuilt
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "app/build/outputs/apk/debug/${{ env.targetZip }}"
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+  #   - name: Upload APKs to Release
+  #     uses: svenstaro/upload-release-action@v2
+  #     with:
+  #       repo_token: ${{ secrets.GITHUB_TOKEN }}
+  #       file: ./k-9/app/build/outputs/apk/debug/*.apk
+  #       tag: 
+  #         overwrite: true
+  #         file_glob: true
+  #         body: |
+  #           Changelog since last release:
+  #           ```
+  #           ${{ fromJSON(steps.changelog.outputs.RELEASE_BODY) }}
+  #           ```
