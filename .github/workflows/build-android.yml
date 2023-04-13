@@ -73,7 +73,7 @@ jobs:
         uses: thedoctor0/zip-release@master
         with:
           type: 'zip'
-          path: 'k9mail-debug.apk'
+          path: 'app-debug.apk'
           directory: "app/build/outputs/apk/debug"
           filename: "${{ env.targetZip }}"
 
