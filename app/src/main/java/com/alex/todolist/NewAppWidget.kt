@@ -65,24 +65,28 @@ class NewAppWidget : AppWidgetProvider() {
         }
         val backgroundRunnable =
             Runnable { // Perform your background operation(s) and set the result(s)
-
-                // Create a very simple REST adapter which points the GitHub API.
-                val retrofit = Retrofit.Builder()
-                    .baseUrl(GitHubService.API_URL)
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build()
-
-                // Create an instance of our GitHub API interface.
-                val github = retrofit.create(GitHubService.GitHub::class.java)
-
-                // Create a call instance for looking up Retrofit contributors.
-                val call = github.contributors("square", "retrofit")
-
-                // Fetch and print a list of the contributors to the library.
-                val contributors = call.execute().body()!!
-
-                // Use the interface to pass along the result
-                listener.onProcessed(contributors.stream().map { a -> a.login }.reduce ("") { sum, element -> sum + element })
+                try {
+                    // Create a very simple REST adapter which points the GitHub API.
+                    val retrofit = Retrofit.Builder()
+                        .baseUrl(GitHubService.API_URL)
+                        .addConverterFactory(GsonConverterFactory.create())
+                        .build()
+    
+                    // Create an instance of our GitHub API interface.
+                    val github = retrofit.create(GitHubService.GitHub::class.java)
+    
+                    // Create a call instance for looking up Retrofit contributors.
+                    val call = github.contributors("square", "retrofit")
+    
+                    // Fetch and print a list of the contributors to the library.
+                    val contributors = call.execute().body()!!
+    
+                    // Use the interface to pass along the result
+                    listener.onProcessed(contributors.stream().map { a -> a.login }.reduce ("") { sum, element -> sum + element })
+                } catch (e: Exception) {
+                    // Handle the exception here
+                    listener.onProcessed("Error: ${e.message}")
+                }
             }
         mExecutor.execute(backgroundRunnable)
     }
